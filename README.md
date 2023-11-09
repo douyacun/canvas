@@ -2,4 +2,4 @@
 
 ![](./assert/clock.png)
 
-代码 [](./clock.html)
+[代码](./clock.html)
