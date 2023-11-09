@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>canvas 坐标</title>
+    <style>
+        body {
+            width: 100%;
+            /*height: 100%;*/
+            display: flex;
+            justify-content: center;
+            align-content: center;
+        }
+
+        #canvas {
+            border: 1px solid red;
+        }
+
+    </style>
+</head>
+<body>
+<div>
+    <div id="readout"></div>
+    <canvas id="canvas" width="500" height="500"></canvas>
+</div>
+
+<script type="text/javascript">
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    const readout = document.getElementById("readout");
+
+    // 线间隔
+    const LINE_SPACE = 10;
+
+    // 背景
+    function drawBackground() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.strokeStyle = "lightgray";
+        context.lineWidth = 0.5;
+
+        // 横线
+        for (var i = LINE_SPACE; i < canvas.width; i += LINE_SPACE) {
+            context.moveTo(0, i);
+            context.lineTo(canvas.width, i);
+            context.stroke();
+
+            context.moveTo(i, 0);
+            context.lineTo(i, canvas.width);
+            context.stroke();
+        }
+    }
+    // 转换成canvas坐标
+    function windowToCanvas(x, y) {
+        var bbox = canvas.getBoundingClientRect();
+        return {
+            x: x - bbox.left * (canvas.width / bbox.width),
+            y: y - bbox.top * (canvas.height / bbox.height)
+        }
+    }
+
+    // 指引线
+    function drawGuidelines(x, y) {
+        context.strokeStyle = 'rgba(0,0,230,0.8)';
+        context.lineWidth = 0.5;
+        drawVerticalLine(x);
+        drawHorizontalLine(y);
+    }
+
+    function drawVerticalLine(x) {
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x, canvas.height);
+        context.stroke();
+    }
+
+    function drawHorizontalLine(y) {
+        context.beginPath();
+        context.moveTo(0, y);
+        context.lineTo(canvas.width, y);
+        context.stroke();
+    }
+
+    canvas.onmousemove = function (e) {
+        // console.log(e.clientX, e.clientY);
+        // windowToCanvas();
+        var loc = windowToCanvas(e.clientX, e.clientY);
+        drawBackground();
+        drawGuidelines(loc.x, loc.y);
+        readout.innerText = '(' + loc.x.toFixed() + ',' + loc.y.toFixed() + ')';
+    }
+
+
+</script>
+</body>
+</html>

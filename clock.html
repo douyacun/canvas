@@ -112,7 +112,7 @@
         function drawScale() {
             for (var i = 1; i <= 60; i++) {
                 angle = Math.PI * 2 / 60 * i - Math.PI / 2;
-                if (i % 5 == 0) { // 小时刻度
+                if (i % 5 === 0) { // 小时刻度
                     context.moveTo(canvas.width / 2 + Math.cos(angle) * HOUR_SCALE_RADIUS, canvas.height / 2 + Math.sin(angle) * HOUR_SCALE_RADIUS)
                     context.lineTo(canvas.width / 2 + Math.cos(angle) * RADIUS, canvas.height / 2 + Math.sin(angle) * RADIUS);
                     context.stroke();
