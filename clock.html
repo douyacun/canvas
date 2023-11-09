@@ -1,0 +1,133 @@
+<html>
+
+<head>
+    <title>Canvas tutorial</title>
+
+    <style type="text/css">
+        canvas {
+            border: 1px solid red;
+        }
+    </style>
+</head>
+
+<body onload="drawClock();">
+    <canvas id="canvas" width="300" height="300"></canvas>
+    <div></div>
+
+    <img src="" id="image" />
+
+    <script type="text/javascript">
+        const canvas = document.getElementById("canvas");
+        const context = canvas.getContext("2d");
+
+        //字体高度
+        const FONT_HEIGHT = 15,
+            //外边距
+            MARGIN = 35,
+            //时钟半径（留出外边距放数字）
+            RADIUS = canvas.width / 2 - MARGIN,
+            //分针和秒针的截断长度
+
+            SECONDS_HAND_TRUNCATION = 15, // 秒针长度
+            // MINUTE_HAND_TRUNCATION = canvas.width / 15, // 分针长度
+            // HOUR_HAND_TRUNCATION = canvas.width / 10, // 时针长度
+            //数字空隙
+            NUMERAL_SPACING = 20,
+            //指针的全长度
+            HAND_RADUIS = RADIUS + NUMERAL_SPACING,
+            //刻度尺寸
+            HOUR_SCALE_RADIUS = RADIUS - 10,
+            //刻度尺寸
+            SECONDS_SCALE_RADIUS = RADIUS - 5;
+
+
+        function drawClock() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            drawCircle();
+            drawCenter();
+            drawHands();
+            drawNumerals();
+            drawScale();
+        }
+
+        // 外圈圆
+        function drawCircle() {
+            context.beginPath();
+            //创建一个圆形路径
+            context.arc(canvas.width / 2, canvas.height / 2, RADIUS, 0, Math.PI * 2, true);
+            context.stroke();
+        }
+
+        // 中心点
+        function drawCenter() {
+            context.beginPath();
+            context.arc(canvas.width / 2, canvas.height / 2, 5, 0, 2 * Math.PI, true);
+            context.fill();
+        }
+
+        // 时分秒指针
+        function drawHands() {
+            var date = new Date,
+                hour = date.getHours();
+            hour = hour > 12 ? hour - 12 : hour;
+            drawHand(hour * 5 + (date.getMinutes() / 60) * 5, 1);
+            drawHand(date.getMinutes(), 2);
+            drawHand(date.getSeconds(), 3);
+        }
+
+        function drawHand(loc, unit) {
+            //设置指针弧度, 2π * (loc/ 60) -> 360度的60分之loc，0点从90度开始的
+            var angle = (Math.PI * 2) * (loc / 60) - Math.PI / 2,
+                // 半径
+                handRadius = RADIUS;
+            switch (unit) {
+                case 1:// 时
+                    handRadius = handRadius - SECONDS_HAND_TRUNCATION - SECONDS_HAND_TRUNCATION - SECONDS_HAND_TRUNCATION;
+                    break;
+                case 2:// 分
+                    handRadius = handRadius - SECONDS_HAND_TRUNCATION - SECONDS_HAND_TRUNCATION;
+                    break;
+                case 3:// 秒
+                    handRadius = handRadius - SECONDS_HAND_TRUNCATION;
+                    break;
+            }
+
+            context.moveTo(canvas.width / 2, canvas.height / 2);
+            context.lineTo(canvas.width / 2 + Math.cos(angle) * handRadius, canvas.height / 2 + Math.sin(angle) * handRadius);
+            context.stroke();
+        }
+
+        // 画小时
+        function drawNumerals() {
+            var numerals = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                angle = 0;
+            numerals.forEach(function (num) {
+                angle = Math.PI / 6 * (num - 3);
+                numeralWidth = context.measureText(num).width; // 测量文字宽度
+                context.fillText(num, canvas.width / 2 + Math.cos(angle) * (HAND_RADUIS) - numeralWidth / 2, canvas.height / 2 + Math.sin(angle) * HAND_RADUIS + FONT_HEIGHT / 3);
+            })
+        }
+
+        // 画刻度
+        function drawScale() {
+            for (var i = 1; i <= 60; i++) {
+                angle = Math.PI * 2 / 60 * i - Math.PI / 2;
+                if (i % 5 == 0) { // 小时刻度
+                    context.moveTo(canvas.width / 2 + Math.cos(angle) * HOUR_SCALE_RADIUS, canvas.height / 2 + Math.sin(angle) * HOUR_SCALE_RADIUS)
+                    context.lineTo(canvas.width / 2 + Math.cos(angle) * RADIUS, canvas.height / 2 + Math.sin(angle) * RADIUS);
+                    context.stroke();
+                } else { // 秒刻度
+                    context.moveTo(canvas.width / 2 + Math.cos(angle) * SECONDS_SCALE_RADIUS, canvas.height / 2 + Math.sin(angle) * SECONDS_SCALE_RADIUS);
+                    context.lineTo(canvas.width / 2 + Math.cos(angle) * RADIUS, canvas.height / 2 + Math.sin(angle) * RADIUS);
+                    context.stroke();
+                }
+            }
+        }
+
+
+        context.font = FONT_HEIGHT + 'px Arial';
+        loop = setInterval(drawClock, 1000);
+    </script>
+</body>
+
+</html>
