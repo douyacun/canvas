@@ -23,7 +23,7 @@
 </head>
 <body>
 <div>
-    <div id="readout"></div>
+    <div id="readout">(0, 0)</div>
     <canvas id="canvas" width="500" height="500"></canvas>
 </div>
 
@@ -31,6 +31,8 @@
     const canvas = document.getElementById("canvas");
     const context = canvas.getContext("2d");
     const readout = document.getElementById("readout");
+    var drawingSurfaceImageData, dragging;
+
 
     // 线间隔
     const LINE_SPACE = 10;
@@ -52,6 +54,7 @@
             context.stroke();
         }
     }
+
     // 转换成canvas坐标
     function windowToCanvas(x, y) {
         var bbox = canvas.getBoundingClientRect();
@@ -83,16 +86,37 @@
         context.stroke();
     }
 
+
+    // 保存画布
+    function saveDrawingSurface() {
+        drawingSurfaceImageData = context.getImageData(0, 0, canvas.x, canvas.y);
+    }
+
+    function restoreDrawingSurface() {
+        context.putImageData(drawingSurfaceImageData, 0, 0)
+    }
+
+    // canvas.onmousedown =  function (e) {
+    //     saveDrawingSurface();
+    //     dragging = true;
+    // }
+
     canvas.onmousemove = function (e) {
         // console.log(e.clientX, e.clientY);
         // windowToCanvas();
         var loc = windowToCanvas(e.clientX, e.clientY);
         drawBackground();
+        if (dragging) {
+            restoreDrawingSurface()
+        }
         drawGuidelines(loc.x, loc.y);
         readout.innerText = '(' + loc.x.toFixed() + ',' + loc.y.toFixed() + ')';
     }
 
-
+    // canvas.onmouseup = function (e) {
+    //     restoreDrawingSurface();
+    // }
+    drawBackground();
 </script>
 </body>
 </html>
