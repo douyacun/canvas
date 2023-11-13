@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>拖拽线</title>
+    <style>
+        body {
+            background: #ddd;
+            text-align: center;
+        }
+
+        #canvas {
+            margin-top: 50px;
+            background: #fff;
+            border: 1px solid #ccc;
+            line-height: 500px;
+            cursor: crosshair;
+        }
+
+    </style>
+</head>
+<body id="body">
+<canvas id="canvas" width="800" height="500"></canvas>
+
+<script>
+    const GRID_LINE_SPACE = 10, // 网格线间隔
+        GRID_LINE_WIDTH = 0.5, // 网格线粗细
+        GRID_LINE_COLOR = "lightgray", // 网格线颜色
+
+        canvas = document.getElementById("canvas"),
+        ctx = canvas.getContext("2d"),
+        body = document.getElementById("body");
+
+    let mousedown = {x: 0, y: 0},
+        dragging = false, // 是否在拖拽
+        moving = false,
+        rubberBandRect = {loc: {x: 0, y: 0}, offset: {x: 0, y: 0}, w: 0, h: 0},
+        drawingSurfaceImageData,
+        offset = 100,
+        intervalId = 0;
+
+
+    // 画网格线
+    function drawGridLine() {
+        ctx.save();
+        let i;
+        ctx.strokeStyle = GRID_LINE_COLOR
+        ctx.lineWidth = GRID_LINE_WIDTH
+
+        for (i = GRID_LINE_SPACE; i < canvas.width; i += GRID_LINE_SPACE) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+        }
+
+        for (i = GRID_LINE_SPACE; i < canvas.height; i += GRID_LINE_SPACE) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(canvas.width, i)
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function saveDrawingSurface() {
+        drawingSurfaceImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
+
+    function restoreDrawingSurface() {
+        ctx.putImageData(drawingSurfaceImageData, 0, 0);
+    }
+
+
+    // 橡皮圈
+    function drawRubberBand(loc) {
+        rubberBandRect.w = Math.abs(loc.x - rubberBandRect.offset.x);
+        rubberBandRect.h = Math.abs(loc.y - rubberBandRect.offset.y);
+        if (rubberBandRect.w === 0 || rubberBandRect.h === 0) {
+            return
+        }
+        rubberBandRect.loc.x = loc.x < rubberBandRect.offset.x ? loc.x : rubberBandRect.offset.x;
+        rubberBandRect.loc.y = loc.y < rubberBandRect.offset.y ? loc.y : rubberBandRect.offset.y;
+
+        antRect();
+    }
+
+    function movingRubberBand(loc) {
+        rubberBandRect.loc.x = loc.x - rubberBandRect.offset.x;
+        rubberBandRect.loc.y = loc.y - rubberBandRect.offset.y;
+        antRect();
+    }
+
+    // 起步走
+    function march() {
+        if (rubberBandRect.w > 0 && rubberBandRect.h > 0) {
+            offset--;
+            if (offset < 0) offset = 100;
+
+
+            antRect();
+        }
+    }
+
+    // 蚂蚁线
+    function antRect() {
+        restoreDrawingSurface();
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.lineDashOffset = offset;
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 1;
+        ctx.rect(rubberBandRect.loc.x, rubberBandRect.loc.y, rubberBandRect.w, rubberBandRect.h);
+        ctx.stroke();
+
+        const w = rubberBandRect.w.toFixed(0) + " x " + rubberBandRect.h.toFixed(0)
+        ctx.fillText(w, rubberBandRect.x + rubberBandRect.w + 10, rubberBandRect.y + rubberBandRect.h + 15);
+        ctx.restore();
+    }
+
+    // 坐标转化为canvas坐标
+    function windowToCanvas(x, y) {
+        //返回元素的大小以及位置
+        const bbox = canvas.getBoundingClientRect();
+        return {x: x - bbox.left * (canvas.width / bbox.width), y: y - bbox.top * (canvas.height / bbox.height)};
+    }
+
+    canvas.onmousedown = function (e) {
+        const loc = windowToCanvas(e.clientX, e.clientY);
+        e.preventDefault();
+        // 清空页面
+        dragging = true;
+        if (ctx.isPointInPath(loc.x, loc.y)) {
+            // 按下点 - 橡皮框起点
+            rubberBandRect.offset.x = loc.x - rubberBandRect.loc.x;
+            rubberBandRect.offset.y = loc.y - rubberBandRect.loc.y;
+            moving = true;
+        } else {
+            restoreDrawingSurface();
+            rubberBandRect.offset = loc;
+            rubberBandRect.w = 0
+            rubberBandRect.h = 0
+        }
+    }
+
+    canvas.onmousemove = function (e) {
+        e.preventDefault();
+        const loc = windowToCanvas(e.clientX, e.clientY)
+        if (dragging) {
+            if (moving) {
+                movingRubberBand(loc);
+            } else {
+                drawRubberBand(loc);
+            }
+        }
+        if (ctx.isPointInPath(loc.x, loc.y) && rubberBandRect.w > 0 && rubberBandRect.h > 0) {
+            if (dragging && !moving) {
+                if ((loc.x > rubberBandRect.offset.x && loc.y > rubberBandRect.offset.y) || (loc.x < rubberBandRect.offset.x && loc.y < rubberBandRect.offset.y)) {
+                    canvas.style.cursor = 'nwse-resize';
+                } else {
+                    canvas.style.cursor = 'nesw-resize';
+                }
+            } else {
+                canvas.style.cursor = '-webkit-grab';
+            }
+        } else {
+            canvas.style.cursor = 'crosshair';
+        }
+    }
+
+    canvas.onmouseup = function (e) {
+        e.preventDefault();
+        dragging = false;
+        moving = false;
+    }
+
+    drawGridLine();
+    saveDrawingSurface(); // 存储网格线，不用重复画
+
+
+</script>
+</body>
+</html>

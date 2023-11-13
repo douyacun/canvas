@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>弹力球</title>
+    <style>
+        body {
+            margin-left: 50px;
+            margin-top: 50px;
+            background: #ddd;
+        }
+
+        #canvas {
+            background: #fff;
+            border: 1px solid #aaa;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas" width="700" height="500"></canvas>
+<script>
+    const canvas = document.getElementById("canvas"),
+        context = canvas.getContext("2d"),
+        circles = [];
+
+    // 网格线
+    function drawGrid() {
+        context.strokeStyle = "lightgray"
+        context.lineWidth = 0.5
+
+        // x
+        for (var i = 10; i < canvas.height; i += 10) {
+            context.beginPath();
+            context.moveTo(0, i)
+            context.lineTo(canvas.width, i)
+            context.stroke();
+        }
+        // y
+        for (var i = 10; i < canvas.width; i += 10) {
+            context.beginPath();
+            context.moveTo(i, 0);
+            context.lineTo(i, canvas.height);
+            context.stroke();
+        }
+    }
+
+    // 球
+    function initBalls(num) {
+        for (var i = 0; i < num; i++) {
+            circles[i] = {
+                x: 100,
+                y: 100,
+                velocityX: 2 * Math.random(),
+                velocityY: 2 * Math.random(),
+                radius: 50 * Math.random(),
+                color: 'rgba(' + (Math.random() * 255) + "," + (Math.random() * 255) + "," + (Math.random() * 255) + ")",
+            }
+        }
+    }
+
+    // 下一次球的位置
+    function adjustCircle(circle) {
+        if (circle.x + circle.radius + circle.velocityX > canvas.width || circle.x - circle.radius + circle.velocityX < 0) {
+            circle.velocityX = -circle.velocityX;
+        }
+        if (circle.y + circle.radius + circle.velocityY > canvas.height || circle.y - circle.radius + circle.velocityY < 0) {
+            circle.velocityY = -circle.velocityY;
+        }
+        circle.x += circle.velocityX;
+        circle.y += circle.velocityY;
+    }
+
+    drawGrid();
+    initBalls(3);
+
+    setInterval(function () {
+        // console.log(123)
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawGrid();
+        circles.forEach((circle) => {
+            context.beginPath();
+            context.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+            context.fillStyle = circle.color
+            context.fill();
+            adjustCircle(circle);
+        })
+    }, 15)
+
+</script>
+</body>
+</html>
