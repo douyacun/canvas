@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>绘制其他剪纸图形</title>
+  <style>
+      body {
+          background: #dddddd;
+          display: flex;
+          justify-content: center;
+      }
+
+      .canvas-box {
+          position: relative;
+          width: 500px;
+          height: 500px;
+          margin-top: 20px;
+      }
+
+      .canvas-box canvas {
+          position: absolute;
+          /*background: #ffffff;*/
+      }
+
+      #drawcanvas {
+          z-index: 1;
+          background: #ffffff;
+      }
+
+      #clipcanvas {
+          z-index: 2;
+      }
+  </style>
+</head>
+<body>
+
+<div class="canvas-box">
+  <canvas id="drawcanvas" width="500" height="500"></canvas>
+  <canvas id="clipcanvas" width="500" height="500"></canvas>
+</div>
+
+</body>
+<script>
+  let drawcanvas = document.getElementById('drawcanvas'),
+      drawctx = drawcanvas.getContext('2d'),
+      clipcanvas = document.getElementById('clipcanvas'),
+      clipctx = clipcanvas.getContext('2d'),
+      box = {pos: {x: 0, y: 0}, size: {w: 70, h: 35}, offset: {x: 0, y: 0}},
+      imagePos = {aspectRatio: 1, size: {w: 0, h: 0}},
+      dragging = false,
+      image = new Image();
+
+  function drawGird(context, color, stepX, stepY) {
+    context.strokeStyle = color;
+    context.lineWidth = 0.5;
+
+    for (let i = stepX + 0.5; i < context.canvas.width; i += stepX) {
+      context.beginPath();
+      context.moveTo(i, 0);
+      context.lineTo(i, context.canvas.height);
+      context.stroke();
+    }
+
+    for (let i = stepY + 0.5; i < context.canvas.height; i += stepY) {
+      context.beginPath();
+      context.moveTo(0, i);
+      context.lineTo(context.canvas.width, i);
+      context.stroke();
+    }
+  }
+
+  function draw() {
+    image.src = './assert/2.jpg';
+    image.onload = function() {
+      imagePos.aspectRatio = image.width / image.height;
+      const wScale = drawcanvas.width / image.width;
+      const hScale = drawcanvas.height / image.height;
+      if (wScale < hScale) {
+        imagePos.size.w = drawcanvas.width;
+        imagePos.size.h = imagePos.size.w / imagePos.aspectRatio;
+      } else {
+        imagePos.size.h = drawcanvas.height;
+        imagePos.size.w = imagePos.size.h * imagePos.aspectRatio;
+      }
+      drawcanvas.width = imagePos.size.w;
+      drawcanvas.height = imagePos.size.h;
+      clipcanvas.width = imagePos.size.w;
+      clipcanvas.height = imagePos.size.h;
+
+      box.size.w = clipcanvas.width/2;
+      box.size.h = clipcanvas.height;
+
+      drawImage(drawctx);
+      drawCutouts();
+    };
+  }
+
+  function drawImage(ctx) {
+    ctx.drawImage(image, 0, 0, imagePos.size.w, imagePos.size.h);
+  }
+
+  function drawCutouts() {
+    clipctx.beginPath();
+    clipctx.clearRect(0, 0, clipcanvas.width, clipcanvas.height);
+
+    addOuterRectanglePath();//CW，CW代表Clockwise顺时针
+    addRectanglePath();//CCW
+    clipctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    clipctx.fill();//Cut out shapes
+  }
+
+  function rect(x, y, w, h, direction) {
+    if (direction) {//CCW
+      clipctx.moveTo(x, y);
+      clipctx.lineTo(x, y + h);
+      clipctx.lineTo(x + w, y + h);
+      clipctx.lineTo(x + w, y);
+      clipctx.closePath();
+    } else {
+      clipctx.moveTo(x, y);
+      clipctx.lineTo(x + w, y);
+      clipctx.lineTo(x + w, y + h);
+      clipctx.lineTo(x, y + h);
+      clipctx.closePath();
+    }
+  }
+
+  function addOuterRectanglePath() {
+    clipctx.rect(0, 0, clipcanvas.width, clipcanvas.height);
+  }
+
+  function addRectanglePath() {
+    rect(box.pos.x, box.pos.y, box.size.w, box.size.h, true);
+  }
+
+  function windowToCanvas(x, y) {
+    //返回元素的大小以及位置
+    const bbox = clipcanvas.getBoundingClientRect();
+    return {
+      x: x - bbox.left * (clipcanvas.width / bbox.width),
+      y: y - bbox.top * (clipcanvas.height / bbox.height),
+    };
+  }
+
+  clipcanvas.onmousedown = function(e) {
+    const loc = windowToCanvas(e.clientX, e.clientY);
+    if (!clipctx.isPointInPath(loc.x, loc.y)) {
+      box.offset.x = loc.x - box.pos.x;
+      box.offset.y = loc.y - box.pos.y;
+      box.pos.x = loc.x;
+      box.pos.y = loc.y;
+      dragging = true;
+    }
+  };
+
+  clipcanvas.onmousemove = function(e) {
+    if (dragging) {
+      const loc = windowToCanvas(e.clientX, e.clientY);
+
+      box.pos.x = loc.x - box.offset.x;
+
+      box.pos.x = box.pos.x > 0 ? box.pos.x : 0;
+      box.pos.x = box.pos.x + box.size.w > clipcanvas.width ? clipcanvas.width -
+          box.size.w : box.pos.x;
+
+      box.pos.y = loc.y - box.offset.y;
+
+      box.pos.y = box.pos.y > 0 ? box.pos.y : 0;
+      box.pos.y = box.pos.y + box.size.h > clipcanvas.height
+          ? clipcanvas.height - box.size.h
+          : box.pos.y;
+
+      drawCutouts();
+    }
+  };
+
+  clipcanvas.onmouseup = function(e) {
+    dragging = false;
+  };
+
+  draw();
+</script>
+</html>

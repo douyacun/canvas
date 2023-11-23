@@ -1,120 +1,127 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>canvas画图</title>
-    <style>
-        body {
-            background: #dddddd;
-            text-align: center;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>canvas画图</title>
+  <style>
+      body {
+          background: #dddddd;
+          text-align: center;
+      }
 
-        #canvas_e {
-            background: #ffffff;
-            margin-top: 10px;
-        }
-    </style>
+      #canvas_e {
+          background: #ffffff;
+          margin-top: 10px;
+      }
+  </style>
 </head>
 <body>
 <canvas id="canvas_e" width="500" height="500"></canvas>
-<canvas id="canvas_r" width="500" height="500" style="display: none"></canvas>
 <br/>
 <button id="download" onclick="saveCanvas()">保存图片</button>
 <script>
-    const GRID_LINE_SPACE = 10, // 网格线间隔
-        GRID_LINE_WIDTH = 0.5, // 网格线粗细
-        GRID_LINE_COLOR = "lightgray", // 网格线颜色
-        IMAGE_AREA = 0.8,
+  const GRID_LINE_SPACE = 10, // 网格线间隔
+      GRID_LINE_WIDTH = 0.5, // 网格线粗细
+      GRID_LINE_COLOR = 'lightgray', // 网格线颜色
+      IMAGE_AREA = 0.8,
 
-        canvas_e = document.getElementById("canvas_e"),
-        canvas_r = document.getElementById("canvas_r"),
-        ctx = canvas_e.getContext("2d"),
-        image = new Image();
+      canvas_e = document.getElementById('canvas_e'),
+      ctx = canvas_e.getContext('2d'),
+      image = new Image();
 
-    let imagePos = {
-        loc: {}, // 位置
-        // offset: {}, // 偏移
-        scale: 1,// 缩放比例
-        aspectRatio: 1, // 宽高比
-        original: {w: 0, h: 0},
-        current: {w: 0, h: 0}, // 当前宽高
+  let imagePos = {
+    loc: {}, // 位置
+    // offset: {}, // 偏移
+    scale: 1,// 缩放比例
+    aspectRatio: 1, // 宽高比
+    original: {w: 0, h: 0},
+    current: {w: 0, h: 0}, // 当前宽高
+  };
+
+  // 画网格线
+  function drawGridLine() {
+    ctx.save();
+    let i;
+    ctx.strokeStyle = GRID_LINE_COLOR;
+    ctx.lineWidth = GRID_LINE_WIDTH;
+
+    for (i = GRID_LINE_SPACE; i < canvas_e.width; i += GRID_LINE_SPACE) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, canvas_e.height);
+      ctx.stroke();
     }
 
-    // 画网格线
-    function drawGridLine() {
-        ctx.save();
-        let i;
-        ctx.strokeStyle = GRID_LINE_COLOR
-        ctx.lineWidth = GRID_LINE_WIDTH
-
-        for (i = GRID_LINE_SPACE; i < canvas_e.width; i += GRID_LINE_SPACE) {
-            ctx.beginPath();
-            ctx.moveTo(i, 0);
-            ctx.lineTo(i, canvas_e.height);
-            ctx.stroke();
-        }
-
-        for (i = GRID_LINE_SPACE; i < canvas_e.height; i += GRID_LINE_SPACE) {
-            ctx.beginPath();
-            ctx.moveTo(0, i);
-            ctx.lineTo(canvas_e.width, i)
-            ctx.stroke();
-        }
-        ctx.restore();
+    for (i = GRID_LINE_SPACE; i < canvas_e.height; i += GRID_LINE_SPACE) {
+      ctx.beginPath();
+      ctx.moveTo(0, i);
+      ctx.lineTo(canvas_e.width, i);
+      ctx.stroke();
     }
+    ctx.restore();
+  }
 
-    function drawImage() {
-        // 保持剧中展示
-        imagePos.loc.x = (canvas_e.width - imagePos.original.w * imagePos.scale) / 2;
-        imagePos.loc.y = (canvas_e.height - imagePos.original.h * imagePos.scale) / 2;
-        ctx.drawImage(image, imagePos.loc.x, imagePos.loc.y, imagePos.original.w * imagePos.scale, imagePos.original.h * imagePos.scale);
+  function drawImage() {
+    // 保持剧中展示
+    imagePos.loc.x = (canvas_e.width - imagePos.original.w * imagePos.scale) /
+        2;
+    imagePos.loc.y = (canvas_e.height - imagePos.original.h * imagePos.scale) /
+        2;
+    ctx.drawImage(image, imagePos.loc.x, imagePos.loc.y,
+        imagePos.original.w * imagePos.scale,
+        imagePos.original.h * imagePos.scale);
+  }
 
-        drawLabel();
+  function drawLabel() {
+    const w = imagePos.original.w * imagePos.scale;
+    const h = imagePos.original.h * imagePos.scale;
+
+    const label = Math.floor(image.width * imagePos.scale).toLocaleString() +
+        ' x ' + Math.floor(image.height * imagePos.scale).toLocaleString();
+    const textMerits = ctx.measureText(label);
+
+    if (h + textMerits.fontBoundingBoxAscent +
+        textMerits.fontBoundingBoxDescent < canvas_e.height) {
+      ctx.fillText(label, (canvas_e.width - textMerits.width) / 2,
+          imagePos.loc.y + h + 15);
     }
+  }
 
-    function drawLabel() {
-        const w = imagePos.original.w * imagePos.scale;
-        const h = imagePos.original.h * imagePos.scale;
+  function saveCanvas(e) {
+    const ctx_r = canvas_r.getContext('2d');
 
-        const label = Math.floor(image.width * imagePos.scale).toLocaleString() + " x " + Math.floor(image.height * imagePos.scale).toLocaleString()
-        const textMerits = ctx.measureText(label);
+    canvas_r.height = image.height * imagePos.scale;
+    canvas_r.width = image.width * imagePos.scale;
+    ctx_r.drawImage(image, 0, 0, image.width * imagePos.scale,
+        image.height * imagePos.scale);
+    canvas_r.toBlob(function(blob) {
+      window.open(URL.createObjectURL(blob), '_blob');
+    });
+  }
 
-        if (h + textMerits.fontBoundingBoxAscent + textMerits.fontBoundingBoxDescent < canvas_e.height) {
-            ctx.fillText(label, (canvas_e.width - textMerits.width) / 2, imagePos.loc.y + h + 15);
-        }
+  // console.log(canvas_e.width, canvas_e.height);
+
+  image.src = './assert/1.jpg';
+  image.onload = function() {
+    imagePos.aspectRatio = image.width / image.height;
+    const wScale = canvas_e.width * IMAGE_AREA / image.width;
+    const hScale = canvas_e.height * IMAGE_AREA / image.height;
+    if (wScale < hScale) {
+      imagePos.original.w = canvas_e.width * IMAGE_AREA;
+      imagePos.original.h = imagePos.original.w / imagePos.aspectRatio;
+    } else {
+      imagePos.original.h = canvas_e.height * IMAGE_AREA;
+      imagePos.original.w = imagePos.original.h * imagePos.aspectRatio;
     }
+    // console.log(imagePos)
+    drawImage();
 
-    function saveCanvas(e) {
-        const ctx_r = canvas_r.getContext('2d');
+  };
 
-        canvas_r.height = image.height * imagePos.scale;
-        canvas_r.width = image.width * imagePos.scale;
-        ctx_r.drawImage(image, 0, 0, image.width * imagePos.scale, image.height * imagePos.scale)
-        canvas_r.toBlob(function (blob) {
-            window.open(URL.createObjectURL(blob), "_blob")
-        });
-    }
-
-
-    image.src = "./assert/1.jpg";
-    image.onload = function () {
-        imagePos.aspectRatio = image.width / image.height;
-        const wScale = canvas_e.width * IMAGE_AREA / image.width;
-        const hScale = canvas_e.height * IMAGE_AREA / image.height;
-        if (wScale < hScale) {
-            imagePos.original.w = canvas_e.width * IMAGE_AREA;
-            imagePos.original.h = imagePos.original.w / imagePos.aspectRatio
-        } else {
-            imagePos.original.h = canvas_e.height * IMAGE_AREA;
-            imagePos.original.w = imagePos.original.h * imagePos.aspectRatio
-        }
-        console.log(imagePos)
-        drawImage();
-    }
-    drawGridLine();
+  drawGridLine();
 
 
 </script>
